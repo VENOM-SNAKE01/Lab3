@@ -33,7 +33,7 @@
 401ad1: mov  eax,0x0
 ```
 
-**谁写入了 rbp+8。** 这个值由 `call` 压入。执行前 rsp = 0x721000800ff0，执行后 rsp = 0x721000800fe8，该地址被写入 0x401ad1。返回地址由硬件自动压栈，反汇编里看不到单独的指令。
+**谁写入了 rbp+8。** 这个值由 `call` 压入。执行前 rsp = 0x721000800ff0，执行后 rsp = 0x721000800fe8，该地址被写入 0x401ad1。返回地址由硬件自动压栈，反汇编里看不到单独的指令。（图 1）
 
 **call、序言、leave、ret。** 作用：
 
@@ -105,7 +105,7 @@ gets(expression);            /* 不检查长度，读到换行或 EOF 才停 */
 0x721000800fe8: 41 41 41 ...                  <- 返回地址
 ```
 
-**47 字节上限。** expression 在 0x721000800fd0，这一页到 0x721000801000 结束，还剩 0x30 = 48 字节；`init_fixed_stack` 把 0x721000801000 这一页 mprotect 成 PROT_NONE 当保护页，第 48 个字节正好踩上去。
+**47 字节上限。** expression 在 0x721000800fd0，这一页到 0x721000801000 结束，还剩 0x30 = 48 字节；`init_fixed_stack` 把 0x721000801000 这一页 mprotect 成 PROT_NONE 当保护页，第 48 个字节正好踩上去。（图 2、图 3）
 
 ### 验证记录
 
@@ -147,7 +147,7 @@ gets(expression);            /* 不检查长度，读到换行或 EOF 才停 */
 ### You have successfully detonated the bomb! Congratulations! ###
 ```
 
-system 返回后 eval 的 `leave/ret` 跳到 0x401c1f（`__wrap_main` 里 `call main` 的下一条），那里 `mov rsp,r12` 把栈换回 libc 的栈，最后 exit(0)。
+system 返回后 eval 的 `leave/ret` 跳到 0x401c1f（`__wrap_main` 里 `call main` 的下一条），那里 `mov rsp,r12` 把栈换回 libc 的栈，最后 exit(0)。（图 4）
 
 题目提示的非溢出解法也试过：输入 `1));./malware;#`，eval 拼成 `echo $((1));./malware;#))`，malware 作为普通命令执行。提交的 payload 用的是改返回地址的方式。
 
@@ -186,7 +186,7 @@ fixed_stack_top = 0x721000801000
 
 ### 分析
 
-栈地址固定（ASLR 失效）且可执行（NX 失效），expression 在 0x721000800fd0，这个地址可以直接写进 payload。要执行的只有 `grade_eval(4)`，15 字节够了：
+栈地址固定（ASLR 失效）且可执行（NX 失效），expression 在 0x721000800fd0，这个地址可以直接写进 payload。要执行的只有 `grade_eval(4)`，15 字节，再补一个 nop 刚好填满 16 字节（图 5）：
 
 ```
 push 4                  6a 04
@@ -199,7 +199,7 @@ call rax                ff d0
 
 ### payload 构造
 
-shellcode(16) + saved rbp(0x721000800ff0) + 返回地址(0x721000800fd0)，共 33 字节。
+shellcode(16) + saved rbp(0x721000800ff0) + 返回地址(0x721000800fd0)，共 33 字节。（图 6）
 
 ### 验证记录
 
@@ -238,7 +238,7 @@ shellcode(16) + saved rbp(0x721000800ff0) + 返回地址(0x721000800fd0)，共 3
 | 0x38–0x3f | 0 | 弹进 rdi |
 | 0x40–0x47 | 0x4016e0 | exit@plt |
 
-共 72 字节，退出码 0。
+共 72 字节（末尾再补一个 `\n` 给 gets），退出码 0。（图 7）
 
 ### 验证记录
 
@@ -293,7 +293,7 @@ expression 前 128 字节会被搬到 rbp 之后，直接放 ROP 链：8 字节�
  Hope A will be your grade!
 ```
 
-之后 grade_eval 返回进 main 的 leave，rbp 是垃圾，Bus error（exit=135）。输出已经刷出，不影响判定。
+之后 grade_eval 返回进 main 的 leave，rbp 是垃圾，Bus error（exit=135）。输出已经刷出，不影响判定。（图 8）
 
 ### 思考题
 
