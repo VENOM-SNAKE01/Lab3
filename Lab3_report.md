@@ -75,7 +75,7 @@ rsp            0x721000800fe8
 0x721000800fe8:  0x0000000000401ad1
 ```
 
-![input 栈帧](report-assets/01-stack-frame-input.svg)
+![图 1　input 断点处的寄存器、栈和调用链](report-assets/stack-frame.png)
 
 ## 三、用不同长度的字符串测试 dark-calc（5 分）
 
@@ -111,7 +111,9 @@ gets(expression);            /* 不检查长度，读到换行或 EOF 才停 */
 
 实测 47 能过、48 在 `gets` 内部就崩，符合保护页的解释。
 
-![20/32 个字符分别盖到了哪里](report-assets/02-buffer-overflow.svg)
+![图 2　20 个字符与 32 个字符的结果](report-assets/overflow.png)
+
+![图 3　32 个字符写入后，saved rbp 和返回地址都被 0x41 填满](report-assets/overflow-gdb.png)
 
 ## 四、任务：利用缓冲区漏洞执行 ./malware（25 + 5 分）
 
@@ -149,7 +151,7 @@ system 返回后 eval 的 `leave/ret` 跳到 0x401c1f（`__wrap_main` 里 `call 
 
 题目提示的非溢出解法也试过：输入 `1));./malware;#`，eval 拼成 `echo $((1));./malware;#))`，malware 作为普通命令执行。提交的 payload 用的是改返回地址的方式。
 
-![Task 1 的 payload 和拼接后的命令](report-assets/03-payload-task1.svg)
+![图 4　Task 1 执行 ./malware 的输出](report-assets/task1-run.png)
 
 ## 五、用 GDB 检查 main 的机器码（5 分）
 
@@ -242,7 +244,7 @@ shellcode(16) + saved rbp(0x721000800ff0) + 返回地址(0x721000800fd0)，共 3
 
 有些 glibc 版本会在 grade_eval 里的 printf 崩，需要在链头加一个只有 ret 的 gadget 多弹 8 字节；本机没遇到。
 
-![Task 3 的 ROP 链和 gadget 位置](report-assets/05-payload-task3.svg)
+![图 5　gadget 反汇编与 ROP 链的执行结果](report-assets/rop-run.png)
 
 ## 八、任务：Canary（10 + 10 分）
 
@@ -293,7 +295,7 @@ expression 前 128 字节会被搬到 rbp 之后，直接放 ROP 链：8 字节�
 
 让 len 不在 gets 的溢出路径上：把 `f.len` 放在 expression 前面（更低地址），gets 够不到；或者把 expression 放到结构体最高处、紧贴 canary，越界先踩 canary 触发保护。根治还是把 `gets` 换成 `fgets(expression, sizeof expression, stdin)`，并检查 len 范围。
 
-![dark-log 的栈布局和两段写入](report-assets/06-payload-canary.svg)
+![图 6　dark-log 的栈内容：len 已被改成 0xa0，canary 完好](report-assets/canary-stack.png)
 
 ## 九、运行结果
 
