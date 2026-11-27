@@ -171,6 +171,8 @@ mov  eax,0x0    b8 00 00 00 00        0x401ac7 - 0x401acb
 
 逐条 `si`：rip 从 0x401ac3 → 0x401ac4 → 0x401ac7，与字节数对得上，说明 CPU 是「读 rip 处字节 → 解码长度 → rip 加长度」。多字节数据按小端存放，栈上的 0x401ad1 写作 `d1 1a 40 00 00 00 00 00`。
 
+![图 5　main 开头的机器码与逐条执行的 rip](report-assets/machine-code.png)
+
 ## 六、任务：栈空间执行（25 + 5 分）
 
 ### 关键反汇编
@@ -204,6 +206,8 @@ shellcode(16) + saved rbp(0x721000800ff0) + 返回地址(0x721000800fd0)，共 3
 ```
  Hope A will be your grade!
 ```
+
+![图 6　payload_dark 调用 grade_eval(4) 的输出](report-assets/task2-run.png)
 
 ## 七、任务：ROP（10 + 10 分）
 
@@ -244,7 +248,7 @@ shellcode(16) + saved rbp(0x721000800ff0) + 返回地址(0x721000800fd0)，共 3
 
 有些 glibc 版本会在 grade_eval 里的 printf 崩，需要在链头加一个只有 ret 的 gadget 多弹 8 字节；本机没遇到。
 
-![图 5　gadget 反汇编与 ROP 链的执行结果](report-assets/rop-run.png)
+![图 7　gadget 反汇编与 ROP 链的执行结果](report-assets/rop-run.png)
 
 ## 八、任务：Canary（10 + 10 分）
 
@@ -295,7 +299,7 @@ expression 前 128 字节会被搬到 rbp 之后，直接放 ROP 链：8 字节�
 
 让 len 不在 gets 的溢出路径上：把 `f.len` 放在 expression 前面（更低地址），gets 够不到；或者把 expression 放到结构体最高处、紧贴 canary，越界先踩 canary 触发保护。根治还是把 `gets` 换成 `fgets(expression, sizeof expression, stdin)`，并检查 len 范围。
 
-![图 6　dark-log 的栈内容：len 已被改成 0xa0，canary 完好](report-assets/canary-stack.png)
+![图 8　dark-log 的栈内容：len 已被改成 0xa0，canary 完好](report-assets/canary-stack.png)
 
 ## 九、运行结果
 
